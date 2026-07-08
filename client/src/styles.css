@@ -278,3 +278,90 @@ kbd {
   .cmd-desc { margin-left: 24px; }
   .status-chunk.grow { display: none; }
 }
+
+/* ===== Thêm/Sửa/Xoá ===== */
+.reset-btn {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--dim);
+  background: transparent;
+  border: 1px solid var(--bg2);
+  border-radius: 5px;
+  padding: 3px 9px;
+  cursor: pointer;
+}
+.reset-btn:hover { color: var(--fg); border-color: var(--bg3); }
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.section-head .section-label { flex: 1; }
+
+.btn {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--fg);
+  background: var(--bg1);
+  border: 1px solid var(--bg2);
+  border-radius: 6px;
+  padding: 6px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn:hover { border-color: var(--bg3); }
+.btn.primary {
+  color: var(--bg0);
+  background: var(--aqua);
+  border-color: var(--aqua);
+  font-weight: 500;
+}
+.btn.primary:hover { filter: brightness(1.08); }
+
+.row-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.icon-btn {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--dim);
+  background: var(--bg1);
+  border: 1px solid var(--bg2);
+  border-radius: 5px;
+  padding: 3px 9px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.icon-btn:hover { color: var(--fg); border-color: var(--bg3); }
+.icon-btn.danger:hover { color: #fb4934; border-color: #fb493488; }
+
+.cmd-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 0;
+}
+.form-input {
+  font-family: var(--sans);
+  font-size: 13.5px;
+  color: var(--fg);
+  background: var(--bg1);
+  border: 1px solid var(--bg2);
+  border-radius: 6px;
+  padding: 9px 12px;
+  outline: none;
+}
+.form-input.mono { font-family: var(--mono); }
+.form-input:focus { border-color: var(--amber); }
+.form-input::placeholder { color: var(--bg3); }
+.form-actions { display: flex; gap: 8px; }
+
+@media (max-width: 640px) {
+  .row-actions { order: 3; margin-left: 24px; flex-wrap: wrap; }
+  .section-head { flex-direction: column; align-items: stretch; }
+}

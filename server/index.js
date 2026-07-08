@@ -22,6 +22,11 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", uptime: process.uptime() });
 });
 
+// Toàn bộ dữ liệu — client dùng làm bộ dữ liệu khởi tạo
+app.get("/api/all", (_req, res) => {
+  res.json(data);
+});
+
 // Danh sách category (không kèm commands cho nhẹ)
 app.get("/api/categories", (_req, res) => {
   res.json(

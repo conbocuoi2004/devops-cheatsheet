@@ -31,6 +31,8 @@ function json(res, status, body) {
 function handleApi(req, res, url) {
   if (url.pathname === "/api/health") return json(res, 200, { status: "ok" });
 
+  if (url.pathname === "/api/all") return json(res, 200, data);
+
   if (url.pathname === "/api/categories") {
     return json(
       res,
