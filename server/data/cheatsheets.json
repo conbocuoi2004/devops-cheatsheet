@@ -1,0 +1,150 @@
+{
+  "categories": [
+    {
+      "id": "docker",
+      "name": "Docker",
+      "icon": "🐳",
+      "description": "Container hoá ứng dụng: build image, chạy container, quản lý volume và network.",
+      "commands": [
+        { "cmd": "docker build -t myapp:1.0 .", "desc": "Build image từ Dockerfile trong thư mục hiện tại, gắn tag myapp:1.0" },
+        { "cmd": "docker run -d -p 8080:80 --name web myapp:1.0", "desc": "Chạy container nền, map cổng host 8080 vào cổng 80 của container" },
+        { "cmd": "docker ps -a", "desc": "Liệt kê tất cả container (kể cả đã dừng)" },
+        { "cmd": "docker logs -f web", "desc": "Theo dõi log realtime của container web" },
+        { "cmd": "docker exec -it web sh", "desc": "Mở shell tương tác bên trong container đang chạy" },
+        { "cmd": "docker images", "desc": "Liệt kê các image trên máy" },
+        { "cmd": "docker system prune -a --volumes", "desc": "Dọn sạch container dừng, image không dùng, network và volume rác" },
+        { "cmd": "docker compose up -d --build", "desc": "Build lại và khởi động toàn bộ stack ở chế độ nền" },
+        { "cmd": "docker compose down -v", "desc": "Dừng stack và xoá luôn volume" },
+        { "cmd": "docker inspect web --format '{{.NetworkSettings.IPAddress}}'", "desc": "Lấy IP nội bộ của container" },
+        { "cmd": "docker tag myapp:1.0 ghcr.io/user/myapp:1.0 && docker push ghcr.io/user/myapp:1.0", "desc": "Gắn tag và đẩy image lên registry (GHCR)" },
+        { "cmd": "docker stats", "desc": "Xem CPU/RAM realtime của các container" }
+      ]
+    },
+    {
+      "id": "kubernetes",
+      "name": "Kubernetes",
+      "icon": "☸️",
+      "description": "Điều phối container: pod, deployment, service, scale và debug cluster.",
+      "commands": [
+        { "cmd": "kubectl get pods -A", "desc": "Liệt kê pod trên mọi namespace" },
+        { "cmd": "kubectl apply -f deployment.yaml", "desc": "Áp dụng manifest (tạo hoặc cập nhật tài nguyên)" },
+        { "cmd": "kubectl describe pod <pod-name>", "desc": "Xem chi tiết pod: event, trạng thái, lý do lỗi" },
+        { "cmd": "kubectl logs -f <pod-name> -c <container>", "desc": "Theo dõi log của một container trong pod" },
+        { "cmd": "kubectl exec -it <pod-name> -- sh", "desc": "Mở shell bên trong pod" },
+        { "cmd": "kubectl scale deployment web --replicas=5", "desc": "Scale deployment lên 5 bản sao" },
+        { "cmd": "kubectl rollout restart deployment web", "desc": "Restart lần lượt các pod của deployment" },
+        { "cmd": "kubectl rollout undo deployment web", "desc": "Quay lại phiên bản deploy trước đó" },
+        { "cmd": "kubectl port-forward svc/web 8080:80", "desc": "Forward cổng service về máy local để test" },
+        { "cmd": "kubectl get events --sort-by=.metadata.creationTimestamp", "desc": "Xem event của cluster theo thời gian (debug rất hữu ích)" },
+        { "cmd": "kubectl top pods", "desc": "Xem CPU/RAM các pod (cần metrics-server)" },
+        { "cmd": "kubectl config use-context <context>", "desc": "Chuyển giữa các cluster/context" }
+      ]
+    },
+    {
+      "id": "git",
+      "name": "Git",
+      "icon": "🌿",
+      "description": "Quản lý phiên bản: branch, merge, rebase và xử lý sự cố thường gặp.",
+      "commands": [
+        { "cmd": "git checkout -b feature/login", "desc": "Tạo và chuyển sang branch mới" },
+        { "cmd": "git add -p", "desc": "Stage từng đoạn thay đổi (hunk) một cách chọn lọc" },
+        { "cmd": "git commit --amend --no-edit", "desc": "Gộp thay đổi mới vào commit gần nhất, giữ nguyên message" },
+        { "cmd": "git rebase -i HEAD~3", "desc": "Rebase tương tác 3 commit gần nhất (squash, sửa message...)" },
+        { "cmd": "git stash push -m \"wip\" && git stash pop", "desc": "Cất tạm thay đổi rồi lấy lại sau" },
+        { "cmd": "git log --oneline --graph --all", "desc": "Xem lịch sử commit dạng cây gọn gàng" },
+        { "cmd": "git reset --soft HEAD~1", "desc": "Huỷ commit cuối nhưng giữ thay đổi trong staging" },
+        { "cmd": "git revert <commit-sha>", "desc": "Tạo commit đảo ngược một commit đã push (an toàn cho branch chung)" },
+        { "cmd": "git cherry-pick <commit-sha>", "desc": "Lấy một commit từ branch khác sang branch hiện tại" },
+        { "cmd": "git bisect start && git bisect bad && git bisect good <sha>", "desc": "Tìm commit gây bug bằng tìm kiếm nhị phân" },
+        { "cmd": "git reflog", "desc": "Xem lịch sử mọi thao tác — cứu cánh khi lỡ tay reset/rebase" },
+        { "cmd": "git tag -a v1.0.0 -m \"Release 1.0.0\" && git push origin v1.0.0", "desc": "Tạo tag phiên bản và push lên remote" }
+      ]
+    },
+    {
+      "id": "linux",
+      "name": "Linux",
+      "icon": "🐧",
+      "description": "Quản trị server: process, disk, network, log và quyền truy cập.",
+      "commands": [
+        { "cmd": "htop", "desc": "Giám sát CPU/RAM/process trực quan (cài: apt install htop)" },
+        { "cmd": "df -h && du -sh /var/*", "desc": "Kiểm tra dung lượng ổ đĩa và thư mục nào đang chiếm chỗ" },
+        { "cmd": "ss -tulpn", "desc": "Xem cổng nào đang được lắng nghe và bởi process nào" },
+        { "cmd": "journalctl -u nginx -f --since \"10 min ago\"", "desc": "Theo dõi log service nginx qua systemd" },
+        { "cmd": "systemctl status nginx && systemctl restart nginx", "desc": "Kiểm tra trạng thái và restart service" },
+        { "cmd": "tail -f /var/log/syslog | grep -i error", "desc": "Theo dõi log hệ thống, lọc dòng có 'error'" },
+        { "cmd": "find / -type f -size +500M 2>/dev/null", "desc": "Tìm file lớn hơn 500MB trên toàn hệ thống" },
+        { "cmd": "chmod 600 ~/.ssh/id_rsa && chown user:user file", "desc": "Đặt quyền file SSH key và đổi chủ sở hữu" },
+        { "cmd": "rsync -avz --progress ./dist/ user@server:/var/www/app/", "desc": "Đồng bộ thư mục lên server qua SSH, có nén và hiển thị tiến độ" },
+        { "cmd": "curl -I https://example.com", "desc": "Kiểm tra HTTP header phản hồi của website" },
+        { "cmd": "crontab -e", "desc": "Chỉnh lịch chạy tự động (cron). Vd: 0 3 * * * /backup.sh" },
+        { "cmd": "kill -9 $(lsof -t -i:8080)", "desc": "Diệt process đang chiếm cổng 8080" }
+      ]
+    },
+    {
+      "id": "cicd",
+      "name": "CI/CD",
+      "icon": "🔁",
+      "description": "GitHub Actions: tự động test, build image và deploy khi push code.",
+      "commands": [
+        { "cmd": "on: push: branches: [main]", "desc": "Trigger workflow khi push lên branch main" },
+        { "cmd": "uses: actions/checkout@v4", "desc": "Bước checkout code về runner" },
+        { "cmd": "uses: actions/setup-node@v4 with: node-version: 22", "desc": "Cài Node.js phiên bản chỉ định trên runner" },
+        { "cmd": "run: npm ci && npm test", "desc": "Cài dependency sạch (theo lockfile) và chạy test" },
+        { "cmd": "uses: docker/build-push-action@v6", "desc": "Build và push Docker image trong workflow" },
+        { "cmd": "secrets.GITHUB_TOKEN", "desc": "Token tự sinh để push image lên GHCR, không cần tạo tay" },
+        { "cmd": "gh workflow run deploy.yml", "desc": "Chạy workflow thủ công bằng GitHub CLI" },
+        { "cmd": "gh run watch", "desc": "Theo dõi workflow đang chạy ngay trong terminal" },
+        { "cmd": "appleboy/ssh-action@v1", "desc": "Action SSH vào server để chạy lệnh deploy" },
+        { "cmd": "concurrency: group: deploy cancel-in-progress: true", "desc": "Huỷ deploy cũ khi có deploy mới, tránh chồng chéo" }
+      ]
+    },
+    {
+      "id": "terraform",
+      "name": "Terraform",
+      "icon": "🏗️",
+      "description": "Infrastructure as Code: khai báo hạ tầng, plan trước khi apply.",
+      "commands": [
+        { "cmd": "terraform init", "desc": "Khởi tạo thư mục làm việc, tải provider" },
+        { "cmd": "terraform plan -out=tfplan", "desc": "Xem trước thay đổi và lưu plan ra file" },
+        { "cmd": "terraform apply tfplan", "desc": "Áp dụng đúng plan đã duyệt" },
+        { "cmd": "terraform destroy -target=aws_instance.web", "desc": "Xoá một tài nguyên cụ thể (cẩn thận!)" },
+        { "cmd": "terraform fmt -recursive && terraform validate", "desc": "Format code và kiểm tra cú pháp" },
+        { "cmd": "terraform state list", "desc": "Liệt kê tài nguyên đang được quản lý trong state" },
+        { "cmd": "terraform import aws_instance.web i-0abc123", "desc": "Đưa tài nguyên có sẵn vào quản lý của Terraform" },
+        { "cmd": "terraform workspace new staging", "desc": "Tạo workspace riêng cho môi trường staging" },
+        { "cmd": "terraform output -json", "desc": "Xuất các giá trị output dạng JSON cho script khác dùng" }
+      ]
+    },
+    {
+      "id": "nginx",
+      "name": "Nginx",
+      "icon": "🚦",
+      "description": "Reverse proxy, load balancing, SSL và cấu hình phục vụ web app.",
+      "commands": [
+        { "cmd": "nginx -t && nginx -s reload", "desc": "Kiểm tra cú pháp config rồi reload không downtime" },
+        { "cmd": "proxy_pass http://127.0.0.1:3000;", "desc": "Reverse proxy request về ứng dụng Node chạy cổng 3000" },
+        { "cmd": "try_files $uri $uri/ /index.html;", "desc": "Cấu hình bắt buộc cho SPA (React/Vue) để route phía client hoạt động" },
+        { "cmd": "certbot --nginx -d example.com -d www.example.com", "desc": "Cài SSL Let's Encrypt tự động cho Nginx" },
+        { "cmd": "upstream app { server 10.0.0.1:3000; server 10.0.0.2:3000; }", "desc": "Khai báo nhóm backend để load balancing" },
+        { "cmd": "gzip on; gzip_types text/css application/javascript application/json;", "desc": "Bật nén gzip cho tài nguyên tĩnh" },
+        { "cmd": "limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;", "desc": "Giới hạn tốc độ request theo IP (chống spam API)" },
+        { "cmd": "tail -f /var/log/nginx/access.log /var/log/nginx/error.log", "desc": "Theo dõi log truy cập và log lỗi cùng lúc" }
+      ]
+    },
+    {
+      "id": "ansible",
+      "name": "Ansible",
+      "icon": "📜",
+      "description": "Tự động hoá cấu hình server hàng loạt bằng playbook YAML.",
+      "commands": [
+        { "cmd": "ansible all -i inventory.ini -m ping", "desc": "Kiểm tra kết nối tới mọi server trong inventory" },
+        { "cmd": "ansible-playbook -i inventory.ini site.yml", "desc": "Chạy playbook trên toàn bộ inventory" },
+        { "cmd": "ansible-playbook site.yml --check --diff", "desc": "Chạy thử (dry-run) và xem thay đổi trước khi áp dụng thật" },
+        { "cmd": "ansible-playbook site.yml --limit web01 --tags nginx", "desc": "Chỉ chạy trên host web01 và task gắn tag nginx" },
+        { "cmd": "ansible-vault encrypt secrets.yml", "desc": "Mã hoá file chứa secret" },
+        { "cmd": "ansible all -m apt -a \"name=nginx state=latest\" --become", "desc": "Cài/cập nhật nginx trên mọi server với quyền sudo" },
+        { "cmd": "ansible-galaxy install geerlingguy.docker", "desc": "Cài role có sẵn từ Ansible Galaxy" }
+      ]
+    }
+  ]
+}
