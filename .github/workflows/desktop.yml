@@ -21,7 +21,7 @@ jobs:
         shell: bash
         working-directory: client
         run: |
-          npm ci
+          npm install
           npm run build
 
       - name: Gom file vào desktop/
@@ -35,7 +35,7 @@ jobs:
         shell: bash
         working-directory: desktop
         run: |
-          npm ci
+          npm install
           npm run dist:win
 
       - name: Upload artifact (tải trong tab Actions)
