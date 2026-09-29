@@ -109,3 +109,20 @@ Chỉ cần sửa `server/data/cheatsheets.json` — thêm category hoặc thêm
 ```
 
 Restart server (hoặc rebuild image) là xong, không cần đụng vào frontend.
+
+## Bản desktop offline và SQLite
+
+Bản Electron dùng SQLite lưu thay đổi trên máy người dùng. File database nằm trong
+`app.getPath("userData")/data/cheatsheets.db` (thường là
+`%APPDATA%/DevOps Cheatsheet/data/cheatsheets.db` trên Windows). Dữ liệu mẫu
+trong `server/data/cheatsheets.json` được nạp khi tạo database lần đầu.
+Thêm, sửa, xoá và khôi phục gốc đều được lưu vào SQLite; bản web vẫn dùng
+localStorage riêng của trình duyệt.
+
+Khi chạy phiên bản mới lần đầu, app cố chuyển dữ liệu localStorage cũ của
+phiên hiện tại sang SQLite. Bản Electron cũ dùng cổng ngẫu nhiên, nên
+localStorage của những phiên trước có thể không còn truy cập được.
+
+Nút **↓ sao lưu** tải file `.db` hiện tại. Để phục hồi, đóng app rồi chép file
+đã sao lưu vào đường dẫn `cheatsheets.db` ở trên. Trình gỡ cài đặt không xoá
+thư mục dữ liệu này, nên nội dung tự thêm vẫn có thể được giữ khi cài lại.

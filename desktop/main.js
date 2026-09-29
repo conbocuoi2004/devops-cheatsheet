@@ -1,17 +1,16 @@
 // Electron main process
 // Chạy một HTTP server nội bộ (chỉ lắng nghe 127.0.0.1) phục vụ frontend build
-// và API /api/* từ dữ liệu JSON nhúng sẵn — app hoạt động offline 100%.
+// và API /api/* từ SQLite trên máy người dùng — app hoạt động offline 100%.
 
 const { app, BrowserWindow, shell } = require("electron");
 const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
+const { openDatabase } = require("./db");
 
 const ROOT = __dirname; // trong bản đóng gói, __dirname trỏ vào app.asar
 const PUBLIC_DIR = path.join(ROOT, "public");
-const data = JSON.parse(
-  fs.readFileSync(path.join(ROOT, "data", "cheatsheets.json"), "utf-8")
-);
+let store;
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -28,12 +27,64 @@ function json(res, status, body) {
   res.end(JSON.stringify(body));
 }
 
-function handleApi(req, res, url) {
-  if (url.pathname === "/api/health") return json(res, 200, { status: "ok" });
+function body(req) {
+  if (req.headers["content-type"]?.split(";")[0] !== "application/json") {
+    return Promise.reject(new Error("Content-Type phải là application/json"));
+  }
+  return new Promise((resolve, reject) => {
+    let size = 0;
+    let chunks = [];
+    req.on("data", (chunk) => {
+      size += chunk.length;
+      if (size > 2 * 1024 * 1024) {
+        reject(new Error("Dữ liệu quá lớn"));
+        req.destroy();
+      } else chunks.push(chunk);
+    });
+    req.on("end", () => {
+      try { resolve(JSON.parse(Buffer.concat(chunks).toString("utf8"))); }
+      catch { reject(new Error("JSON không hợp lệ")); }
+    });
+    req.on("error", reject);
+  });
+}
 
-  if (url.pathname === "/api/all") return json(res, 200, data);
+async function handleApi(req, res, url) {
+  // Chỉ cho phép trang của ứng dụng ghi dữ liệu qua HTTP loopback.
+  if (req.method !== "GET" && req.headers.origin !== `http://127.0.0.1:${serverPort}`) {
+    return json(res, 403, { error: "Nguồn yêu cầu không hợp lệ" });
+  }
+  try {
+    if (url.pathname === "/api/health" && req.method === "GET") {
+      return json(res, 200, { status: "ok", desktop: true });
+    }
 
-  if (url.pathname === "/api/categories") {
+    if (url.pathname === "/api/migrate" && req.method === "POST") {
+      const payload = await body(req);
+      return json(res, 200, store.migrate(payload.local || null));
+    }
+    if (url.pathname === "/api/all" && req.method === "PUT") {
+      store.replace(await body(req));
+      return json(res, 200, store.read());
+    }
+    if (url.pathname === "/api/reset" && req.method === "POST") {
+      await body(req);
+      return json(res, 200, store.reset());
+    }
+    if (url.pathname === "/api/backup" && req.method === "GET") {
+      const bytes = store.backup();
+      res.writeHead(200, {
+        "Content-Type": "application/vnd.sqlite3",
+        "Content-Disposition": 'attachment; filename="devops-cheatsheet-backup.db"',
+        "Content-Length": bytes.length,
+      });
+      return res.end(bytes);
+    }
+
+    const data = store.read();
+    if (url.pathname === "/api/all" && req.method === "GET") return json(res, 200, data);
+
+    if (url.pathname === "/api/categories" && req.method === "GET") {
     return json(
       res,
       200,
@@ -41,15 +92,15 @@ function handleApi(req, res, url) {
         id, name, icon, description, count: commands.length,
       }))
     );
-  }
+    }
 
-  const catMatch = url.pathname.match(/^\/api\/categories\/([\w-]+)$/);
-  if (catMatch) {
+    const catMatch = url.pathname.match(/^\/api\/categories\/([\w-]+)$/);
+    if (catMatch && req.method === "GET") {
     const cat = data.categories.find((c) => c.id === catMatch[1]);
     return cat ? json(res, 200, cat) : json(res, 404, { error: "Không tìm thấy category" });
-  }
+    }
 
-  if (url.pathname === "/api/search") {
+    if (url.pathname === "/api/search" && req.method === "GET") {
     const q = (url.searchParams.get("q") || "").trim().toLowerCase();
     if (!q) return json(res, 200, []);
     const results = [];
@@ -65,14 +116,18 @@ function handleApi(req, res, url) {
       }
     }
     return json(res, 200, results.slice(0, 50));
-  }
+    }
 
-  json(res, 404, { error: "Not found" });
+    json(res, 404, { error: "Not found" });
+  } catch (error) {
+    console.error("Desktop API:", error);
+    if (!res.headersSent && !res.destroyed) json(res, 400, { error: error.message });
+  }
 }
 
 function serveStatic(res, urlPath) {
-  let filePath = path.join(PUBLIC_DIR, path.normalize(urlPath).replace(/^([.][.][/\\])+/, ""));
-  if (!filePath.startsWith(PUBLIC_DIR)) filePath = path.join(PUBLIC_DIR, "index.html");
+  let filePath = path.resolve(PUBLIC_DIR, `.${urlPath}`);
+  if (!filePath.startsWith(PUBLIC_DIR + path.sep)) filePath = path.join(PUBLIC_DIR, "index.html");
   if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
     filePath = path.join(PUBLIC_DIR, "index.html"); // SPA fallback
   }
@@ -86,6 +141,7 @@ function startServer() {
     const server = http.createServer((req, res) => {
       const url = new URL(req.url, "http://127.0.0.1");
       if (url.pathname.startsWith("/api/")) return handleApi(req, res, url);
+      if (req.method !== "GET") return json(res, 405, { error: "Method not allowed" });
       serveStatic(res, url.pathname === "/" ? "/index.html" : url.pathname);
     });
     // Cổng 0 = hệ điều hành tự chọn cổng trống, tránh xung đột
@@ -93,8 +149,9 @@ function startServer() {
   });
 }
 
+let serverPort;
 async function createWindow() {
-  const port = await startServer();
+  if (!serverPort) serverPort = await startServer();
   const win = new BrowserWindow({
     width: 1000,
     height: 760,
@@ -108,10 +165,13 @@ async function createWindow() {
     shell.openExternal(url);
     return { action: "deny" };
   });
-  win.loadURL(`http://127.0.0.1:${port}`);
+  win.loadURL(`http://127.0.0.1:${serverPort}`);
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(async () => {
+  store = await openDatabase(app.getPath("userData"));
+  await createWindow();
+}).catch(console.error);
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });

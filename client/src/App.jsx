@@ -133,32 +133,56 @@ export default function App() {
   const [query, setQuery] = useState("");
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState(null);
+  const [desktop, setDesktop] = useState(false);
+  const desktopRef = useRef(false);
+  const saveQueue = useRef(Promise.resolve());
   const inputRef = useRef(null);
   const debouncedQuery = useDebounce(query);
 
-  // Nạp dữ liệu: ưu tiên bản đã chỉnh sửa trong localStorage, chưa có thì lấy từ server
+  async function api(url, options) {
+    const response = await fetch(url, options);
+    if (!response.ok) throw new Error((await response.json()).error || "Không lưu được dữ liệu");
+    return response.json();
+  }
+
+  // Desktop chuyển dữ liệu cũ từ localStorage vào SQLite đúng một lần.
+  // Bản web tiếp tục dùng localStorage như trước.
   useEffect(() => {
-    const local = loadLocal();
-    if (local?.categories?.length) {
-      setData(local);
-      setActive(local.categories[0].id);
-      return;
+    async function load() {
+      try {
+        const health = await api("/api/health");
+        if (health.desktop) {
+          desktopRef.current = true;
+          setDesktop(true);
+          const current = await api("/api/migrate", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ local: loadLocal() }),
+          });
+          localStorage.removeItem(STORAGE_KEY);
+          setData(current);
+          setActive(current.categories[0]?.id || null);
+        } else {
+          const local = loadLocal();
+          const current = local?.categories?.length ? local : withIds(await api("/api/all"));
+          setData(current);
+          setActive(current.categories[0]?.id || null);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
+        }
+      } catch (e) { setError(`Không tải được dữ liệu: ${e.message}`); }
     }
-    fetch("/api/all")
-      .then((r) => r.json())
-      .then((raw) => {
-        const seeded = withIds(raw);
-        setData(seeded);
-        setActive(seeded.categories[0]?.id || null);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(seeded));
-      })
-      .catch(() => setError("Không kết nối được API. Backend đã chạy chưa?"));
+    load();
   }, []);
 
   // Mọi thay đổi đều lưu lại ngay
   function save(next) {
     setData(next);
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+    if (desktopRef.current) {
+      saveQueue.current = saveQueue.current.then(() => api("/api/all", {
+        method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(next),
+      })).catch((e) => setError(`Không lưu được thay đổi: ${e.message}`));
+    } else {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+    }
   }
 
   function addCommand(catId, vals) {
@@ -185,8 +209,20 @@ export default function App() {
     });
   }
 
-  function resetAll() {
+  async function resetAll() {
     if (!window.confirm("Khôi phục dữ liệu gốc? Mọi lệnh bạn đã thêm/sửa/xoá sẽ mất.")) return;
+    if (desktopRef.current) {
+      await saveQueue.current;
+      try {
+        const fresh = await api("/api/reset", {
+          method: "POST", headers: { "Content-Type": "application/json" }, body: "{}",
+        });
+        setData(fresh);
+        setActive(fresh.categories[0]?.id || null);
+        setError(null);
+      } catch (e) { setError(`Không khôi phục được dữ liệu: ${e.message}`); }
+      return;
+    }
     localStorage.removeItem(STORAGE_KEY);
     fetch("/api/all")
       .then((r) => r.json())
@@ -196,6 +232,20 @@ export default function App() {
         setActive(seeded.categories[0]?.id || null);
       })
       .catch(() => setError("Không tải được dữ liệu gốc từ server."));
+  }
+
+  async function backup() {
+    await saveQueue.current;
+    try {
+      const response = await fetch("/api/backup");
+      if (!response.ok) throw new Error("Không tạo được bản sao");
+      const url = URL.createObjectURL(await response.blob());
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "devops-cheatsheet-backup.db";
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (e) { setError(`Không sao lưu được: ${e.message}`); }
   }
 
   // Tìm kiếm ngay trên dữ liệu local (đã gồm cả lệnh tự thêm)
@@ -239,6 +289,7 @@ export default function App() {
         <span className="titlebar-dots" aria-hidden="true"><i /> <i /> <i /></span>
         <span className="titlebar-text">devops-cheatsheet — bash</span>
         <button className="reset-btn" onClick={resetAll} title="Khôi phục dữ liệu gốc">↺ khôi phục gốc</button>
+        {desktop && <button className="reset-btn" onClick={backup} title="Lưu bản sao SQLite">↓ sao lưu</button>}
       </header>
 
       <div className="hero">

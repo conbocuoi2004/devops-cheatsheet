@@ -1,7 +1,7 @@
 {
   "name": "devops-cheatsheet-desktop",
   "productName": "DevOps Cheatsheet",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Tra cứu nhanh lệnh DevOps — bản desktop offline",
   "main": "main.js",
   "private": true,
@@ -16,7 +16,7 @@
   "build": {
     "appId": "com.devops.cheatsheet",
     "productName": "DevOps Cheatsheet",
-    "files": ["main.js", "public/**/*", "data/**/*"],
+    "files": ["main.js", "db.js", "public/**/*", "data/**/*", "node_modules/sql.js/**/*"],
     "win": {
       "target": [
         { "target": "nsis", "arch": ["x64"] },
@@ -26,7 +26,10 @@
     "nsis": {
       "oneClick": true,
       "perMachine": false,
-      "deleteAppDataOnUninstall": true
+      "deleteAppDataOnUninstall": false
     }
+  },
+  "dependencies": {
+    "sql.js": "^1.13.0"
   }
 }
